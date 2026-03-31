@@ -51,7 +51,6 @@ defmodule BlockScoutWeb.Notifier do
 
   import Explorer.Chain.SmartContract.Proxy.Models.Implementation, only: [proxy_implementations_association: 0]
 
-  @check_broadcast_sequence_period 500
   @api_true [api?: true]
 
   case @chain_type do
@@ -556,7 +555,7 @@ defmodule BlockScoutWeb.Notifier do
   end
 
   defp schedule_broadcasting(block) do
-    :timer.sleep(@check_broadcast_sequence_period)
+    :timer.sleep(Application.get_env(:block_scout_web, __MODULE__)[:broadcast_sequence_period] || 500)
     last_broadcasted_block_number = Helper.fetch_from_ets_cache(:last_broadcasted_block, :number)
 
     if last_broadcasted_block_number == BlockNumberHelper.previous_block_number(block.number) do

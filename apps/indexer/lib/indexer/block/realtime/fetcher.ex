@@ -47,7 +47,6 @@ defmodule Indexer.Block.Realtime.Fetcher do
 
   @behaviour Block.Fetcher
 
-  @minimum_safe_polling_period :timer.seconds(1)
   @max_realtime_blocks_in_memory 10
 
   @shutdown_after :timer.minutes(1)
@@ -277,7 +276,8 @@ defmodule Indexer.Block.Realtime.Fetcher do
           period
       end
 
-    safe_polling_period = max(polling_period, @minimum_safe_polling_period)
+    min_safe = Application.get_env(:indexer, __MODULE__)[:minimum_safe_polling_period] || :timer.seconds(1)
+    safe_polling_period = max(polling_period, min_safe)
 
     Process.send_after(self(), :poll_latest_block_number, safe_polling_period)
   end
