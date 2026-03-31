@@ -19,7 +19,7 @@ defmodule BlockScoutWeb.Mixfile do
       lockfile: "../../mix.lock",
       package: package(),
       start_permanent: Mix.env() == :prod,
-      version: "9.3.2-nonce-bigint",
+      version: "9.3.2-webskt-timing",
       xref: [
         exclude: [
           Explorer.Chain.PolygonZkevm.Reader,
