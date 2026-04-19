@@ -57,7 +57,12 @@ defmodule Indexer.Fetcher.TokenBalance do
 
       formatted_params = Enum.map(filtered_balances, &entry/1)
 
-      BufferedTask.buffer(__MODULE__, formatted_params, realtime?, :infinity)
+      try do
+        BufferedTask.buffer(__MODULE__, formatted_params, realtime?, :infinity)
+      catch
+        :exit, {:noproc, _} ->
+          :ok
+      end
     end
   end
 

@@ -2982,7 +2982,7 @@ defmodule Explorer.Chain.Transaction do
   def pending_transactions_list do
     __MODULE__
     |> pending_transactions_query()
-    |> where([t], t.inserted_at < ago(1, "day"))
+    |> where([t], t.inserted_at < ago(1, "day") or (t.inserted_at < ago(1, "hour") and t.updated_at > ago(10, "minute")))
     |> Repo.all(timeout: :infinity)
   end
 
