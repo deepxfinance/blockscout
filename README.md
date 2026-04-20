@@ -49,25 +49,3 @@ See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for contribution and pull request
 [![License: GPL v3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
-const ws = new WebSocket("wss://explorer-testnet.deepx.fi/socket")
-let ref = 0
-
-ws.onopen = () => {
-// 同时订阅两个，对比 payload
-ws.send(JSON.stringify(["2", String(ref++), "transactions_old:new_transaction", "phx_join", {}]))
-
-setInterval(() => {
-ws.send(JSON.stringify(["null", String(ref++), "phoenix", "heartbeat", {}]))
-}, 30000)
-}
-
-ws.onmessage = (msg) => {
-const [, , topic, event, payload] = JSON.parse(msg.data)
-if (event === "phx_reply" && topic === "phoenix") return
-if (event === "phx_reply") {
-console.log(`📋 [${topic}] join: ${payload.status}`)
-return
-}
-// 对比两个 channel 的 payload 内容
-console.log(`📨 [${topic}]`, JSON.stringify(payload, null, 2))
-}
