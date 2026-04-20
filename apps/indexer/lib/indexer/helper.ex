@@ -116,9 +116,15 @@ defmodule Indexer.Helper do
   @doc """
   Calculates average block time in milliseconds (based on the latest 100 blocks) divided by 2.
   Sends corresponding requests to the RPC node.
-  Returns a tuple {:ok, block_check_interval, last_safe_block}
-  where `last_safe_block` is the number of the recent `safe` or `latest` block (depending on which one is available).
-  Returns {:error, description} in case of error.
+
+  ## Parameters
+  - `json_rpc_named_arguments`: Configuration parameters for the JSON RPC connection.
+
+  ## Returns
+  `{:ok, block_check_interval, last_safe_block}`: A tuple where
+    - `block_check_interval` is the calculated interval in milliseconds.
+    - `last_safe_block` is the safe or latest block number.
+  In case of error returns the `{:error, description}` tuple.
   """
   @spec get_block_check_interval(list()) :: {:ok, non_neg_integer(), non_neg_integer()} | {:error, any()}
   def get_block_check_interval(json_rpc_named_arguments) do
@@ -220,12 +226,17 @@ defmodule Indexer.Helper do
   Forms JSON RPC named arguments for the given RPC URL.
   """
   @spec json_rpc_named_arguments(binary()) :: list()
-  def json_rpc_named_arguments(rpc_url) do
+  def json_rpc_named_arguments(rpc_url) when is_binary(rpc_url) do
+    normalized_rpc_url =
+      rpc_url
+      |> trim_url()
+      |> validate_rpc_url!()
+
     [
       transport: EthereumJSONRPC.HTTP,
       transport_options: [
         http: EthereumJSONRPC.HTTP.Tesla,
-        urls: [rpc_url],
+        urls: [normalized_rpc_url],
         http_options: [
           recv_timeout: :timer.minutes(10),
           timeout: :timer.minutes(10),
@@ -234,6 +245,11 @@ defmodule Indexer.Helper do
       ]
     ]
   end
+
+  def json_rpc_named_arguments(_rpc_url), do: raise(ArgumentError, "RPC URL must be a non-empty string")
+
+  defp validate_rpc_url!(""), do: raise(ArgumentError, "RPC URL must be a non-empty string")
+  defp validate_rpc_url!(rpc_url), do: rpc_url
 
   @doc """
   Splits a given range into chunks of the specified size.

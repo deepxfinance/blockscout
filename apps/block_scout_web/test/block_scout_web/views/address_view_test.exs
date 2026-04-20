@@ -1,7 +1,7 @@
 defmodule BlockScoutWeb.AddressViewTest do
   use BlockScoutWeb.ConnCase, async: true
 
-  alias Explorer.Chain.{Address, Data, Hash, Transaction}
+  alias Explorer.Chain.{Address, Hash, Transaction}
   alias BlockScoutWeb.{AddressView, Endpoint}
 
   describe "address_partial_selector/4" do
@@ -19,8 +19,7 @@ defmodule BlockScoutWeb.AddressViewTest do
           transaction: transaction,
           transaction_index: transaction.index,
           to_address: nil,
-          created_contract_address_hash: nil,
-          block_hash: transaction.block_hash,
+          created_contract_address: nil,
           block_number: transaction.block_number
         )
 
@@ -342,7 +341,7 @@ defmodule BlockScoutWeb.AddressViewTest do
   describe "address_page_title/1" do
     test "uses the Smart Contract name when the contract is verified" do
       smart_contract = build(:smart_contract, name: "POA")
-      address = build(:address, smart_contract: smart_contract)
+      address = build(:address, smart_contract: smart_contract, verified: true)
 
       assert AddressView.address_page_title(address) == "POA (#{address})"
     end

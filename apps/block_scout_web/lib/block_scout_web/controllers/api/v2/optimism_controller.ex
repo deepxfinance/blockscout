@@ -34,6 +34,10 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
 
   action_fallback(BlockScoutWeb.API.V2.FallbackController)
 
+  plug(OpenApiSpex.Plug.CastAndValidate, json_render_error_v2: true)
+
+  tags(["optimism"])
+
   @api_true [api?: true]
 
   operation :batches,
@@ -161,7 +165,7 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
   Function to handle GET requests to `/api/v2/optimism/batches/da/celestia/:height/:commitment` endpoint.
   """
   @spec batch_by_celestia_blob(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def batch_by_celestia_blob(conn, %{"height" => height, "commitment" => commitment}) do
+  def batch_by_celestia_blob(conn, %{height: height, commitment: commitment}) do
     {height, ""} = Integer.parse(height)
 
     commitment =
@@ -205,7 +209,7 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
   Function to handle GET requests to `/api/v2/optimism/batches/:number` endpoint.
   """
   @spec batch_by_number(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def batch_by_number(conn, %{"number" => number}) do
+  def batch_by_number(conn, %{number: number}) do
     {number, ""} = Integer.parse(number)
 
     batch = FrameSequence.batch_by_number(number, api?: true)
@@ -458,11 +462,7 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
          {nonce, ""} <- Integer.parse(nonce_string, 16),
          msg = InteropMessage.get_message(init_chain_id, nonce),
          false <- is_nil(msg) do
-      current_chain_id =
-        case ChainId.get_id() do
-          nil -> Application.get_env(:block_scout_web, :chain_id)
-          chain_id -> chain_id
-        end
+      current_chain_id = ChainId.get_id()
 
       relay_chain_id = msg.relay_chain_id
 
@@ -473,13 +473,7 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
           _ -> nil
         end
 
-      transfer_token =
-        if not is_nil(msg.transfer_token_address_hash) do
-          case Token.get_by_contract_address_hash(msg.transfer_token_address_hash, @api_true) do
-            nil -> %{contract_address_hash: msg.transfer_token_address_hash, symbol: nil, decimals: nil}
-            t -> %{contract_address_hash: t.contract_address_hash, symbol: t.symbol, decimals: t.decimals}
-          end
-        end
+      transfer_token = fetch_transfer_token(msg.transfer_token_address_hash)
 
       message =
         msg
@@ -498,6 +492,15 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
         |> put_view(ApiView)
         |> put_status(:not_found)
         |> render(:message, %{message: "Invalid message id or the message with such id is not found"})
+    end
+  end
+
+  defp fetch_transfer_token(nil), do: nil
+
+  defp fetch_transfer_token(transfer_token_address_hash) do
+    case Token.get_by_contract_address_hash(transfer_token_address_hash, @api_true) do
+      nil -> %{contract_address_hash: transfer_token_address_hash, symbol: nil, decimals: nil}
+      t -> %{contract_address_hash: t.contract_address_hash, symbol: t.symbol, decimals: t.decimals}
     end
   end
 
@@ -525,11 +528,7 @@ defmodule BlockScoutWeb.API.V2.OptimismController do
   """
   @spec interop_messages(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def interop_messages(conn, params) do
-    current_chain_id =
-      case ChainId.get_id() do
-        nil -> Application.get_env(:block_scout_web, :chain_id)
-        chain_id -> chain_id
-      end
+    current_chain_id = ChainId.get_id()
 
     {messages, next_page} =
       params

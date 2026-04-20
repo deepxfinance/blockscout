@@ -69,6 +69,7 @@ defmodule Explorer.Chain.Token do
   * ERC-1155
   * ERC-404
   * ZRC-2 (for Zilliqa chain type)
+  * ERC-7984
 
   ## Token Specifications
 
@@ -78,6 +79,7 @@ defmodule Explorer.Chain.Token do
   * [ERC-1155](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1155.md)
   * [ERC-404](https://github.com/Pandora-Labs-Org/erc404)
   * [ZRC-2](https://github.com/Zilliqa/ZRC/blob/main/zrcs/zrc-2.md)
+  * [ERC-7984](https://github.com/ethereum/ERCs/blob/39197cde3e32d8fc7fde74c7d0ce5e67ad4de409/ERCS/erc-7984.md)
   """
   require Logger
 
@@ -377,13 +379,15 @@ defmodule Explorer.Chain.Token do
       |> SortingHelper.page_with_sorting(paging_options, sorting, @default_sorting)
 
     filtered_query =
-      case filter && filter !== "" && Search.prepare_search_term(filter) do
-        {:some, filter_term} ->
-          sorted_paginated_query
-          |> apply_fts_filter(filter_term)
+      case filter && Chain.string_to_address_hash(filter) do
+        {:ok, address_hash} ->
+          from(t in sorted_paginated_query, where: t.contract_address_hash == ^address_hash)
 
         _ ->
-          sorted_paginated_query
+          case filter && filter !== "" && Search.prepare_search_term(filter) do
+            {:some, filter_term} -> apply_fts_filter(sorted_paginated_query, filter_term)
+            _ -> sorted_paginated_query
+          end
       end
 
     filtered_query
